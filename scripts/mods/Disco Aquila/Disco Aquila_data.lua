@@ -1,6 +1,5 @@
 local mod = get_mod("Disco Aquila")
 
-
 mod.on_setting_changed = function(setting_id)
 --  if mod:get("da_song_name") == "Select Audio" then return end
   
@@ -54,6 +53,7 @@ return {
       {
       setting_id = "da_song_name",
       type = "dropdown",
+      tooltip = "da_song_desc",
       default_value = "Select Audio",
       options = {
         {text = "SelectAudio", value = "Select Audio"},

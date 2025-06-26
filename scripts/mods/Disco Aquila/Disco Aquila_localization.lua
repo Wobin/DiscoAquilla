@@ -11,6 +11,9 @@ return {
   da_song_name = {
     en = "Song Name"
   },
+  da_song_desc = {
+    en = "Selecting a song here will adjust the below sliders to the individual settings for that song"
+    },
   da_song_volume = {
     en = "Volume"
   },

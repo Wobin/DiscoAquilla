@@ -1,6 +1,5 @@
 local mod = get_mod("Disco Aquila")
 local PortableRandom = require("scripts/foundation/utilities/portable_random")
-local mt = get_mod("modding_tools")
 
 -- Local Refs
 local unit = Unit

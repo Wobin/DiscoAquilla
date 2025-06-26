@@ -1,6 +1,10 @@
+-- Title: Disco Aquila
+-- Author: Wobin
+-- Date: 27/06/2025
+-- Version: 1.0.3
+
 local mod = get_mod("Disco Aquila")
 local Audio = get_mod("Audio")
-local mt = get_mod("modding_tools")
 
 local PortableRandom = require("scripts/foundation/utilities/portable_random")
 local managers = Managers
@@ -9,7 +13,7 @@ local managers_state = managers.state
 local os = os
 local os_clock = os.clock
 
-mod.version = "1.0"
+mod.version = "1.0.2"
 
 mod:io_dofile("Disco Aquila/scripts/mods/Disco Aquila/Utils")
 
@@ -25,6 +29,10 @@ mod.drones = {}
 
 mod.on_all_mods_loaded = function()  
   mod:info(mod.version)
+  if not Audio then
+    mod:echo("The Audio plugin mod is required for this mod to function")
+    return
+  end
   local game_mode = Managers.state.game_mode and Managers.state.game_mode:game_mode_name()
   if game_mode and game_mode == "shooting_range" or game_mode == "coop_complete_objective" then			
       mod:init()
@@ -138,9 +146,9 @@ local trip_audio = function(sound_name, unit_id, targetUnit)
     end
     mod.song = radio:play_random(drone.unit)
     if not mod.song then return end
-    local settings = mod:get("da_song_settings")
-    local song_setting = settings[mod.song] or {volume = 80, bpm = 100}
-    mod.update_interval = 60 / song_setting.bpm 
+    local settings = mod:get("da_song_settings") or {}
+    local song_setting = settings[mod.song] or {bpm = 100}
+    mod.update_interval = 60 / (song_setting.bpm or 100)
   end
 end
 
