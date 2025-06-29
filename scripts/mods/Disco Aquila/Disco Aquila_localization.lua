@@ -62,6 +62,18 @@ local localizations = {
   SoundOfDaPolice = {
     en = "Sound Of Da Police"
   },
+  Kirby = {
+    en = "Kirby Dream Land Theme"
+  },
+  DisposalUnitImperiumMix = {
+    en = "Disposal Unit Imperium Mix"
+  },
+  LightoftheImperium = {
+    en = "Light of the Imperium"
+  },
+  GangnamStyle = {
+    en = "Gangnam Style"
+  },
 }
 local string = string
 local string_split = string.split

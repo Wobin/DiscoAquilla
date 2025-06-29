@@ -7,7 +7,10 @@ local song_settings = {
         {text = "FettyWapJBL", value = "Fetty Wap JBL.opus"},
         {text = "RAMRANCH", value = "RAM RANCH.opus"},
         {text = "SeriousSam", value = "SeriousSam.opus"},
-        {text = "SoundOfDaPolice", value = "SoundOfDaPolice.opus"},
+        {text = "Kirby", value = "Kirby dream land.opus"},
+        {text = "DisposalUnitImperiumMix", value = "Disposal Unit Imperium Mix.opus"},
+        {text = "LightoftheImperium", value = "Light of the Imperium.opus"},
+        {text = "GangnamStyle", value = "Gangnam Style.opus"},
         -- Add any new music here. Place the sound file in the audio folder and name another entry in here        
         -- {text = "SongNameNoSpaces", value = "Song Name.opus"},
         --

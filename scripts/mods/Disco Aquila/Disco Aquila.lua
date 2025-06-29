@@ -135,15 +135,22 @@ local trip_audio = function(sound_name)
   if false or sound_name:match("play_buff_drone_buff_loop") then
     local drone = findlocalvalue({{"self", "Table", 7}})    
     mod._world = drone._world    
+    
     local socket = mod.drones[drone.unit] or {lights = {}}
+    local song = radio:play_random(drone._unit)
+    
+    local settings = mod:get("da_song_settings") or {}
+    local song_settings = settings[song]
+    
     if table.is_empty(socket.lights) then     
       mod.drones[drone._unit] = socket           
       if not mod:get("da_stealth_mode") then
-        if not mod:get("da_random_lights") then
-          mod:spawn_flashlight(socket.lights, drone._unit, mod:get("da_light_one"))
-          mod:spawn_flashlight(socket.lights, drone._unit, mod:get("da_light_two"))
-          mod:spawn_flashlight(socket.lights, drone._unit, mod:get("da_light_one"))
-          mod:spawn_flashlight(socket.lights, drone._unit, mod:get("da_light_two"))
+        
+        if not song_settings.random_lights then
+          mod:spawn_flashlight(socket.lights, drone._unit, song_settings.light_one)
+          mod:spawn_flashlight(socket.lights, drone._unit, song_settings.light_two)
+          mod:spawn_flashlight(socket.lights, drone._unit, song_settings.light_one)
+          mod:spawn_flashlight(socket.lights, drone._unit, song_settings.light_two)
         else
           mod:spawn_flashlight(socket.lights, drone._unit)        
           mod:spawn_flashlight(socket.lights, drone._unit)        
@@ -153,11 +160,9 @@ local trip_audio = function(sound_name)
         end
       end
     end
-    mod.song = radio:play_random(drone._unit)
-    if not mod.song then return end
-    local settings = mod:get("da_song_settings") or {}
-    local song_setting = settings[mod.song] or {bpm = 100}
-    mod.update_interval = 60 / (song_setting.bpm or 100) 
+    mod.song = song
+    if not mod.song then return end 
+    mod.update_interval = 60 / (song_settings.bpm or 100) 
   end
 end
 
