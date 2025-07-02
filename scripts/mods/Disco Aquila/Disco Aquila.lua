@@ -1,7 +1,7 @@
 -- Title: Disco Aquila
 -- Author: Wobin
 -- Date: 02/07/2025
--- Version: 1.3.0
+-- Version: 1.3.3
 
 local mod = get_mod("Disco Aquila")
 local Audio = get_mod("Audio")
@@ -18,7 +18,7 @@ local table = table
 local table_insert = table.insert
 local table_is_empty = table.is_empty
 
-mod.version = "1.3.0"
+mod.version = "1.3.3"
 
 mod:io_dofile("Disco Aquila/scripts/mods/Disco Aquila/Utils")
 
@@ -79,6 +79,7 @@ mod.deinit = function(self)
     end
   end
   self.drones = {}
+  mod.setup:close()
 end
 
 local delta = 0

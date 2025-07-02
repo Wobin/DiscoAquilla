@@ -37,9 +37,10 @@ end
 function DiscoAquilaConfig:open()
 	local input_manager = Managers.input
 	local name = self.__class_name
-
+  
 	if not input_manager:cursor_active() then
 		input_manager:push_cursor(name)
+    self.pushedcursor = true
 	end
 
 	self._is_open = true
@@ -49,9 +50,10 @@ end
 function DiscoAquilaConfig:close()
 	local input_manager = Managers.input
 	local name = self.__class_name
-
-	if input_manager:cursor_active() then
+  
+	if self.pushedcursor then    
 		input_manager:pop_cursor(name)
+    self.pushedcursor = false
 	end
 
 	self._is_open = false
@@ -69,12 +71,6 @@ local updateCheckbox = function(setting, tooltip)
     end
   end
   if current_setting ~= updated_setting then mod:set(setting, updated_setting) end
-end
-
-local bracket = function(value, min, max)
-  if value < min then return min end
-  if value > max then return max end
-  return value
 end
 
 function DiscoAquilaConfig:update()
@@ -129,14 +125,24 @@ function DiscoAquilaConfig:update()
   Imgui_text("-----------------------------------")
   if mod.selectedSong then
     local newVolume = Imgui_slider_int(mod:localize("da_song_volume"), song_settings.volume or 80, 1, 100)          
-    if newVolume ~= song_settings.volume then
-      newVolume = bracket(newVolume, 1, 100)
+    if newVolume ~= song_settings.volume then      
       song_settings.volume = newVolume
       saveSettings(song_settings)
     end
+    Imgui.same_line()
+    local button_text = mod.playingSample and "||" or ">" 
+    if Imgui.button(button_text) then
+      if mod.playingSample then
+        mod.radio:stop_playing(mod.playingSample)
+        mod.playingSample = nil
+      else
+        mod.playingSample = mod.radio:play_sample(mod.selectedSong, song_settings.volume)        
+      end
+      
+    
+    end
     local newBpm = Imgui_slider_int(mod:localize("da_song_bpm"), song_settings.bpm or 100, 50, 200)          
-    if newBpm ~= song_settings.volume then
-      newBpm = bracket(newBpm, 50, 200)
+    if newBpm ~= song_settings.bpm then      
       song_settings.bpm = newBpm
       saveSettings(song_settings)
     end

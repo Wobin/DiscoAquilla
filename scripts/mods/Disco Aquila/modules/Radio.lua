@@ -13,6 +13,14 @@ DiscoAquilaRadio.get_music = function()
   return audio_file_handler:list()
 end
 
+DiscoAquilaRadio.play_sample = function(self, song_name, volume)
+  return Audio.play_file(song_name, {audio_type = "sfx", volume = volume, duration = 20, track_status = function() mod.playingSample = nil end})
+end
+
+DiscoAquilaRadio.stop_playing = function(self, id)
+  Audio.stop_file(id)
+end
+
 DiscoAquilaRadio.play_random = function(unit)    
   local station = audio_file_handler:random(nil, true)
   local song = station.file_path
