@@ -1,7 +1,7 @@
 -- Title: Disco Aquila
 -- Author: Wobin
--- Date: 27/06/2025
--- Version: 1.1.0
+-- Date: 02/07/2025
+-- Version: 1.3.0
 
 local mod = get_mod("Disco Aquila")
 local Audio = get_mod("Audio")
@@ -13,8 +13,12 @@ local managers_event = managers.event
 local managers_state = managers.state 
 local os = os
 local os_clock = os.clock
+local pairs = pairs
+local table = table
+local table_insert = table.insert
+local table_is_empty = table.is_empty
 
-mod.version = "1.2.0"
+mod.version = "1.3.0"
 
 mod:io_dofile("Disco Aquila/scripts/mods/Disco Aquila/Utils")
 
@@ -38,40 +42,29 @@ mod.on_all_mods_loaded = function()
     mod:echo("The Audio plugin mod is required for this mod to function")
     return
   end
-  local game_mode = Managers.state.game_mode and Managers.state.game_mode:game_mode_name()
-  if game_mode and valid_zones[game_mode]then			
-      mod:init()
-  end 
+  mod:init()
 end
 
 mod.on_unload = function(exit_game)
     mod:deinit()
 end
 
-mod.on_game_state_changed = function(status, sub_state_name)
-  if status == "enter" and sub_state_name == "GameplayStateRun" then
-		local game_mode = managers_state and managers_state.game_mode:game_mode_name()        
-		if game_mode and valid_zones[game_mode]then			
-      mod:init()
-		end
-	end
-end
-
 local random = PortableRandom:new(os_clock())
+local random_range = random.random_range
 local flashlight = mod:io_dofile("Disco Aquila/scripts/mods/Disco Aquila/modules/flashlight")
 local radio = mod:io_dofile("Disco Aquila/scripts/mods/Disco Aquila/modules/radio")
+local setup = mod:io_dofile("Disco Aquila/scripts/mods/Disco Aquila/modules/settingsui")
 
 mod.init = function(self)
     self.package_manager = managers.package
     self.package_manager:load("content/weapons/player/attachments/flashlights/flashlight_01/flashlight_01", "DiscoAqulia")              
     self.radio = radio:new()
-    
+    self.setup = setup:new()
     self.initialized = true       
 end
 
-
 mod.spawn_flashlight = function(self, lightFixture, drone_unit, colour)
-    table.insert(lightFixture, flashlight:new(self._world, drone_unit, random:random_range(0, 1000), colour))
+    table_insert(lightFixture, flashlight:new(self._world, drone_unit, random_range(random, 0, 1000), colour))
     for _,light in pairs(lightFixture) do            
       light:spawn_flashlight()   
       light:random_rotate()
@@ -93,7 +86,11 @@ local cleanupdelta = 0
 local cleanup_interval = 10
 
 mod.update = function(dt, t)       
-  if mod:get("da_stealth_mode") or table.is_empty(mod.drones) or not mod.update_interval then return end
+  if not mod.initialized then return end
+  
+  mod.setup:update()  
+  
+  if mod:get("da_stealth_mode") or table_is_empty(mod.drones) or not mod.update_interval then return end
   if delta > mod.update_interval then
     for drone_unit, socket in pairs(mod.drones) do
       if unit_alive(drone_unit) then 
@@ -140,18 +137,18 @@ local trip_audio = function(sound_name)
     local song = radio:play_random(drone._unit)
     
     local settings = mod:get("da_song_settings") or {}
-    local song_settings = settings[song]
+    local song_settings = settings[song] or {}
     
-    if table.is_empty(socket.lights) then     
+    if table_is_empty(socket.lights) then     
       mod.drones[drone._unit] = socket           
       if not mod:get("da_stealth_mode") then
         
-        if not song_settings.random_lights then
+        if not song_settings.random_rainbow then          
           mod:spawn_flashlight(socket.lights, drone._unit, song_settings.light_one)
           mod:spawn_flashlight(socket.lights, drone._unit, song_settings.light_two)
           mod:spawn_flashlight(socket.lights, drone._unit, song_settings.light_one)
           mod:spawn_flashlight(socket.lights, drone._unit, song_settings.light_two)
-        else
+        else          
           mod:spawn_flashlight(socket.lights, drone._unit)        
           mod:spawn_flashlight(socket.lights, drone._unit)        
           mod:spawn_flashlight(socket.lights, drone._unit)        
@@ -169,4 +166,8 @@ end
 Audio.hook_sound("buff_drone", function(_, sound_name, delta, unit_or_position_or_id)
     trip_audio(sound_name)
     return not mod:get("da_mute_drone")
+end)
+
+mod:command("da", mod:localize("da_open_setup"), function ()
+	mod.setup:open()
 end)

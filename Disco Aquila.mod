@@ -9,4 +9,13 @@ return {
 		})
 	end,
 	packages = {},
+  load_after = {
+    "DarktideLocalServer",
+    "Audio",
+  },
+  require = {
+    "DarktideLocalServer",
+    "Audio",
+  },
+  version = "1.3.0"
 }

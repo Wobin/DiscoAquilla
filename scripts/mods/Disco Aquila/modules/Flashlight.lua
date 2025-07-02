@@ -1,6 +1,6 @@
 local mod = get_mod("Disco Aquila")
 local PortableRandom = require("scripts/foundation/utilities/portable_random")
-local mt = get_mod("modding_tools")
+--local mt = get_mod("modding_tools")
 
 -- Local Refs
 local unit = Unit
@@ -163,15 +163,13 @@ DiscoAquilaFlashlight.init = function(self, world, unit, seed, colour)
   self.seed = seed
   self.colour = colour
   self.light = nil
-  if colour then 
-    mt:inspect("colour",  Color[colour](255, true))
-    self.r = Color[colour](255, true)[2] / 255
-    self.g = Color[colour](255, true)[3] / 255
-    self.b = Color[colour](255, true)[4] / 255
+  if colour then     
+    self.r = colour.r
+    self.g = colour.g
+    self.b = colour.b
   end
   random = PortableRandom:new(seed)  
   self.initialised = true  
-  mt:inspect("light", self)
 end
 
 return DiscoAquilaFlashlight
