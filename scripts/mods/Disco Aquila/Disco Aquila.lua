@@ -1,7 +1,7 @@
 -- Title: Disco Aquila
 -- Author: Wobin
 -- Date: 02/07/2025
--- Version: 1.3.3
+-- Version: 1.3.5
 
 local mod = get_mod("Disco Aquila")
 local Audio = get_mod("Audio")
@@ -18,7 +18,7 @@ local table = table
 local table_insert = table.insert
 local table_is_empty = table.is_empty
 
-mod.version = "1.3.3"
+mod.version = "1.3.5"
 
 mod:io_dofile("Disco Aquila/scripts/mods/Disco Aquila/Utils")
 
@@ -42,7 +42,7 @@ mod.on_all_mods_loaded = function()
     mod:echo("The Audio plugin mod is required for this mod to function")
     return
   end
-  mod:init()
+  Promise.delay(5):next(function() mod:init() end)  
 end
 
 mod.on_unload = function(exit_game)
@@ -165,6 +165,7 @@ local trip_audio = function(sound_name)
 end
 
 Audio.hook_sound("buff_drone", function(_, sound_name, delta, unit_or_position_or_id)
+    if not mod.initialized then return end
     trip_audio(sound_name)
     return not mod:get("da_mute_drone")
 end)
