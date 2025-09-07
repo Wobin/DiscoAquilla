@@ -1,10 +1,11 @@
 -- Title: Disco Aquila
 -- Author: Wobin
--- Date: 02/07/2025
--- Version: 1.3.5
+-- Date: 12/07/2025
+-- Version: 1.3.9
 
 local mod = get_mod("Disco Aquila")
 local Audio = get_mod("Audio")
+local DLS = get_mod("DarktideLocalServer")
 --local mt = get_mod("modding_tools")
 
 local PortableRandom = require("scripts/foundation/utilities/portable_random")
@@ -18,7 +19,7 @@ local table = table
 local table_insert = table.insert
 local table_is_empty = table.is_empty
 
-mod.version = "1.3.5"
+mod.version = "1.3.9"
 
 mod:io_dofile("Disco Aquila/scripts/mods/Disco Aquila/Utils")
 
@@ -35,14 +36,18 @@ local valid_zones = {
                     }
 mod.drones = {}
 
-
 mod.on_all_mods_loaded = function()  
   mod:info(mod.version)
- if not Audio then
-    mod:echo("The Audio plugin mod is required for this mod to function")
+ if not Audio or not DLS then
+    mod:echo("The Darktide Local Server and Audio plugin mods are required for Disco Aquila to function")
     return
+  end  
+end
+
+mod.on_game_state_changed = function(status, state_name)
+  if not mod.initialized and status == "enter" and state_name == "StateGameplay" then
+    mod:init()
   end
-  Promise.delay(5):next(function() mod:init() end)  
 end
 
 mod.on_unload = function(exit_game)
@@ -79,7 +84,9 @@ mod.deinit = function(self)
     end
   end
   self.drones = {}
-  mod.setup:close()
+  if mod.setup then 
+    mod.setup:close()
+  end
 end
 
 local delta = 0
@@ -117,9 +124,8 @@ mod.update = function(dt, t)
       end
     end  
     for rubbish,_ in pairs(trash) do
-      mod.drones[rubbish] = nil
+      mod.drones[rubbish] = nil     
     end    
-    mod.song = nil
     cleanupdelta = 0
   else
     cleanupdelta = cleanupdelta + dt
@@ -137,18 +143,20 @@ local trip_audio = function(sound_name)
     local socket = mod.drones[drone.unit] or {lights = {}}
     local song = radio:play_random(drone._unit)
     
+    if not song then return end
+    
     local settings = mod:get("da_song_settings") or {}
     local song_settings = settings[song] or {}
-    
+    mod.settings = song_settings
     if table_is_empty(socket.lights) then     
       mod.drones[drone._unit] = socket           
       if not mod:get("da_stealth_mode") then
         
         if not song_settings.random_rainbow then          
-          mod:spawn_flashlight(socket.lights, drone._unit, song_settings.light_one)
-          mod:spawn_flashlight(socket.lights, drone._unit, song_settings.light_two)
-          mod:spawn_flashlight(socket.lights, drone._unit, song_settings.light_one)
-          mod:spawn_flashlight(socket.lights, drone._unit, song_settings.light_two)
+          mod:spawn_flashlight(socket.lights, drone._unit, song_settings.colour_one)
+          mod:spawn_flashlight(socket.lights, drone._unit, song_settings.colour_two)
+          mod:spawn_flashlight(socket.lights, drone._unit, song_settings.colour_one)
+          mod:spawn_flashlight(socket.lights, drone._unit, song_settings.colour_two)
         else          
           mod:spawn_flashlight(socket.lights, drone._unit)        
           mod:spawn_flashlight(socket.lights, drone._unit)        
@@ -158,8 +166,7 @@ local trip_audio = function(sound_name)
         end
       end
     end
-    mod.song = song
-    if not mod.song then return end 
+    mod.song = song    
     mod.update_interval = 60 / (song_settings.bpm or 100) 
   end
 end

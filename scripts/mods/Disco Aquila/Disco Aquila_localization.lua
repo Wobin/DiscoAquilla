@@ -23,6 +23,15 @@ local localizations = {
   da_song_volume = {
     en = "Volume"
   },
+  da_apply_master_volume = {
+    en = "Use Master Volume control"
+  },
+  da_master_volume = {
+    en = "Master Volume"
+  },
+  da_print_song = {
+    en = "Print song name to chat window",
+    },
   da_song_bpm = {
     en = "BPM"
   },

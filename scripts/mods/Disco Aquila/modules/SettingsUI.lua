@@ -108,6 +108,15 @@ function DiscoAquilaConfig:update()
   updateCheckbox("da_mute_drone")
   updateCheckbox("da_stealth_mode")
   updateCheckbox("da_remove_filter")
+  updateCheckbox("da_print_song")
+  updateCheckbox("da_apply_master_volume")
+  if mod:get("da_apply_master_volume") then
+    local currentMasterVolume = mod:get("da_master_volume")
+    local newMasterVolume = Imgui_slider_int(mod:localize("da_master_volume"), currentMasterVolume or 80, 1, 100)          
+    if newMasterVolume ~= currentMasterVolume then
+      mod:set("da_master_volume", newMasterVolume, false)      
+    end
+  end
   local songList = mod.radio:get_music()
   Imgui_text("-----------------------------------")  
   if Imgui_begin_combo(mod:localize("da_song_settings"), mod.selectedSong) then

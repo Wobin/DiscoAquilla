@@ -90,18 +90,6 @@ DiscoAquilaFlashlight.spawn_flashlight = function(self)
   end
 end
 
-DiscoAquilaFlashlight.shine = function(self)
-  if self.light then
-        light_set_enabled(self.light, true)
-  end
-end
-
-DiscoAquilaFlashlight.hide = function(self)
-  if self.light then
-        light_set_enabled(self.light, false)
-  end
-end
-
 DiscoAquilaFlashlight.despawn = function(self)
     if self:flashlight_unit_alive() then        
       --  world_unlink_unit(self._world, self.flashlight_unit)        
