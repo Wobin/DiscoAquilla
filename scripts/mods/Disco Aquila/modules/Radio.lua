@@ -11,7 +11,7 @@ local playlist = {}
 local random = PortableRandom:new(os_clock())
 local random_range = random.random_range
 local table = table
-local table_clone = table.clone
+local table_clone = table.shallow_copy
 local table_remove = table.remove
 
 DiscoAquilaRadio.init = function(self, retried)  
