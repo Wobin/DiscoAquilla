@@ -1,7 +1,7 @@
 -- Title: Disco Aquila
 -- Author: Wobin
--- Date: 12/07/2025
--- Version: 1.3.9
+-- Date: 19/03/2026
+-- Version: 1.4.0
 
 local mod = get_mod("Disco Aquila")
 local Audio = get_mod("Audio")
@@ -10,8 +10,6 @@ local DLS = get_mod("DarktideLocalServer")
 
 local PortableRandom = require("scripts/foundation/utilities/portable_random")
 local managers = Managers
-local managers_event = managers.event
-local managers_state = managers.state 
 local os = os
 local os_clock = os.clock
 local pairs = pairs
@@ -19,7 +17,7 @@ local table = table
 local table_insert = table.insert
 local table_is_empty = table.is_empty
 
-mod.version = "1.3.9"
+mod.version = "1.4.0"
 
 mod:io_dofile("Disco Aquila/scripts/mods/Disco Aquila/Utils")
 
