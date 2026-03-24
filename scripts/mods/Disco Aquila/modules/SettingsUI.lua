@@ -111,15 +111,15 @@ function DiscoAquilaConfig:update()
   updateCheckbox("da_print_song")
   updateCheckbox("da_apply_master_volume")
   if mod:get("da_apply_master_volume") then
-    local currentMasterVolume = mod:get("da_master_volume")
-    local newMasterVolume = Imgui_slider_int(mod:localize("da_master_volume"), currentMasterVolume or 80, 1, 100)          
+     local currentMasterVolume = mod:get("da_master_volume") or 80
+     local newMasterVolume = Imgui_slider_int(mod:localize("da_master_volume"), currentMasterVolume, 1, 100)
     if newMasterVolume ~= currentMasterVolume then
       mod:set("da_master_volume", newMasterVolume, false)      
     end
   end
   local songList = mod.radio:get_music()
   Imgui_text("-----------------------------------")  
-  if Imgui_begin_combo(mod:localize("da_song_settings"), mod.selectedSong) then
+  if Imgui_begin_combo(mod:localize("da_song_settings"), mod.selectedSong or "") then
     Imgui_selectable(mod:localize("da_select_song"), not mod.selectedSong  )
     for i,v in ipairs(songList) do
       if Imgui_selectable(v.file_path, mod.selectedSong == v.file_path) then
@@ -170,9 +170,9 @@ function DiscoAquilaConfig:update()
         saveSettings(song_settings)
       end
         local existingColorTwo = song_settings.colour_two or {r = 0, g = 0, b = 0}      
-      local r,g,b = Imgui_color_edit_3(mod:localize("da_light_two"), existingColorTwo.r, existingColorTwo.g, existingColorTwo.b)      
-      if r ~= existingColorTwo.r or g ~= existingColorTwo.g or b ~= existingColorTwo.b then        
-        song_settings.colour_two = { r = r, g = g, b = b}
+        local r2,g2,b2 = Imgui_color_edit_3(mod:localize("da_light_two"), existingColorTwo.r, existingColorTwo.g, existingColorTwo.b)      
+        if r2 ~= existingColorTwo.r or g2 ~= existingColorTwo.g or b2 ~= existingColorTwo.b then        
+          song_settings.colour_two = { r = r2, g = g2, b = b2}
         saveSettings(song_settings)
       end
     end

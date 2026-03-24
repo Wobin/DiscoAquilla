@@ -1,7 +1,7 @@
 -- Title: Disco Aquila
 -- Author: Wobin
 -- Date: 19/03/2026
--- Version: 1.4.0
+-- Version: 1.4.1
 
 local mod = get_mod("Disco Aquila")
 local Audio = get_mod("Audio")
@@ -17,7 +17,7 @@ local table = table
 local table_insert = table.insert
 local table_is_empty = table.is_empty
 
-mod.version = "1.4.0"
+mod.version = "1.4.1"
 
 mod:io_dofile("Disco Aquila/scripts/mods/Disco Aquila/Utils")
 
