@@ -12,10 +12,7 @@ return {
   load_after = {
     "DarktideLocalServer",
     "Audio",
+    "SimpleAudio",
   },
-  require = {
-    "DarktideLocalServer",
-    "Audio",
-  },
-  version = "1.4.1"
+  version = "1.5.0"
 }

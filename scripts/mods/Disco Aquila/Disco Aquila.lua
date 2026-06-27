@@ -1,11 +1,9 @@
 -- Title: Disco Aquila
 -- Author: Wobin
--- Date: 19/03/2026
--- Version: 1.4.1
+-- Date: 28/06/2026
+-- Version: 1.5.0
 
 local mod = get_mod("Disco Aquila")
-local Audio = get_mod("Audio")
-local DLS = get_mod("DarktideLocalServer")
 --local mt = get_mod("modding_tools")
 
 local PortableRandom = require("scripts/foundation/utilities/portable_random")
@@ -17,7 +15,7 @@ local table = table
 local table_insert = table.insert
 local table_is_empty = table.is_empty
 
-mod.version = "1.4.1"
+mod.version = "1.5.0"
 
 mod:io_dofile("Disco Aquila/scripts/mods/Disco Aquila/Utils")
 
@@ -34,12 +32,20 @@ local valid_zones = {
                     }
 mod.drones = {}
 
-mod.on_all_mods_loaded = function()  
+local AudioBackend = mod:io_dofile("Disco Aquila/scripts/mods/Disco Aquila/modules/AudioBackend")
+
+mod.on_all_mods_loaded = function()
   mod:info(mod.version)
- if not Audio or not DLS then
-    mod:echo("The Darktide Local Server and Audio plugin mods are required for Disco Aquila to function")
+  local SA = get_mod("SimpleAudio")
+  local Audio = get_mod("Audio")
+  local DLS = get_mod("DarktideLocalServer")
+  mod.audio_backend = AudioBackend.select(SA, Audio, DLS)
+  if not mod.audio_backend then
+    mod:echo("Disco Aquila needs SimpleAudio, or the Audio + DarktideLocalServer plugins, to function")
     return
-  end  
+  end
+  mod:info("Audio backend: " .. mod.audio_backend.name)
+  mod:register_audio_hook()
 end
 
 mod.on_game_state_changed = function(status, state_name)
@@ -169,11 +175,13 @@ local trip_audio = function(sound_name)
   end
 end
 
-Audio.hook_sound("buff_drone", function(_, sound_name, delta, unit_or_position_or_id)
+mod.register_audio_hook = function()
+  mod.audio_backend.hook_sound("buff_drone", function(_, sound_name, delta, unit_or_position_or_id)
     if not mod.initialized then return end
     trip_audio(sound_name)
     return not mod:get("da_mute_drone")
-end)
+  end)
+end
 
 mod:command("da", mod:localize("da_open_setup"), function ()
 	mod.setup:open()
