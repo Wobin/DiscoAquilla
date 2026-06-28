@@ -10,9 +10,10 @@ return {
 	end,
 	packages = {},
   load_after = {
-    "DarktideLocalServer",
-    "Audio",
     "SimpleAudio",
   },
-  version = "1.5.0"
+  require = {
+    "SimpleAudio",
+  },
+  version = "2.0.0"
 }

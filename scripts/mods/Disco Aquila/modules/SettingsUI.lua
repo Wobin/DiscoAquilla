@@ -80,7 +80,7 @@ function DiscoAquilaConfig:update()
 
 	Imgui_set_next_window_size(window_width, window_height)
 	if first_run then
-		Imgui_set_next_window_pos((RESOLUTION_LOOKUP.width / 2) - (WIDTH / 2) - 100, (RESOLUTION_LOOKUP.height / 2) - (HEIGHT / 2) - 100)
+		Imgui_set_next_window_pos((RESOLUTION_LOOKUP.width / 2) - (WIDTH / 2) - 100, (RESOLUTION_LOOKUP.height / 2) - (HEIGHT / 2) - 20)
 		first_run = false
 	end
 	local _, closed = Imgui_begin_window("Disco Aquila Config", "always_auto_resize")
@@ -106,6 +106,7 @@ function DiscoAquilaConfig:update()
   
   updateCheckbox("da_play_once","da_play_desc")
   updateCheckbox("da_mute_drone")
+  updateCheckbox("da_suppress_game_music","da_suppress_game_music_desc")
   updateCheckbox("da_stealth_mode")
   updateCheckbox("da_remove_filter")
   updateCheckbox("da_print_song")

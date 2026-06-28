@@ -1,0 +1,7 @@
+{
+  "order": {
+    "require": ["SimpleAudio"],
+    "this_after": ["SimpleAudio"],
+    "this_before": []
+  }
+}

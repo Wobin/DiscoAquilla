@@ -59,6 +59,12 @@ local localizations = {
   da_stealth_mode = {
     en = "Run with no lights"
     },
+  da_suppress_game_music = {
+    en = "Silence in-game music while active"
+  },
+  da_suppress_game_music_desc = {
+    en = "Mutes the game's own music (not other sound) while a drone disco is running, then restores it"
+  },
   Brasso = {
     en = "Brasso"
   },

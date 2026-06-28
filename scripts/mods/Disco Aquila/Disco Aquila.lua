@@ -1,7 +1,7 @@
 -- Title: Disco Aquila
 -- Author: Wobin
 -- Date: 28/06/2026
--- Version: 1.5.0
+-- Version: 2.0.0
 
 local mod = get_mod("Disco Aquila")
 --local mt = get_mod("modding_tools")
@@ -14,8 +14,27 @@ local pairs = pairs
 local table = table
 local table_insert = table.insert
 local table_is_empty = table.is_empty
+local Wwise = Wwise
+local Application = Application
 
-mod.version = "1.5.0"
+local MUSIC_PARAM = "options_music_slider"
+local music_suppressed = false
+local saved_music_volume = 100
+
+local function set_music_suppressed(suppress)
+  if not (Wwise and Wwise.set_parameter) then return end
+  if suppress then
+    if music_suppressed then return end
+    saved_music_volume = Application.user_setting("sound_settings", MUSIC_PARAM) or 100
+    Wwise.set_parameter(MUSIC_PARAM, 0)
+    music_suppressed = true
+  elseif music_suppressed then
+    Wwise.set_parameter(MUSIC_PARAM, saved_music_volume)
+    music_suppressed = false
+  end
+end
+
+mod.version = "2.0.0"
 
 mod:io_dofile("Disco Aquila/scripts/mods/Disco Aquila/Utils")
 
@@ -32,19 +51,13 @@ local valid_zones = {
                     }
 mod.drones = {}
 
-local AudioBackend = mod:io_dofile("Disco Aquila/scripts/mods/Disco Aquila/modules/AudioBackend")
-
 mod.on_all_mods_loaded = function()
   mod:info(mod.version)
-  local SA = get_mod("SimpleAudio")
-  local Audio = get_mod("Audio")
-  local DLS = get_mod("DarktideLocalServer")
-  mod.audio_backend = AudioBackend.select(SA, Audio, DLS)
-  if not mod.audio_backend then
-    mod:echo("Disco Aquila needs SimpleAudio, or the Audio + DarktideLocalServer plugins, to function")
+  mod.simple_audio = get_mod("SimpleAudio")
+  if not mod.simple_audio then
+    mod:error("Disco Aquila requires the SimpleAudio mod - please install and enable it.")
     return
   end
-  mod:info("Audio backend: " .. mod.audio_backend.name)
   mod:register_audio_hook()
 end
 
@@ -81,6 +94,7 @@ mod.spawn_flashlight = function(self, lightFixture, drone_unit, colour)
 end
 
 mod.deinit = function(self)
+  set_music_suppressed(false)
   if not self.drones then return end
   for _, socket in pairs(self.drones) do
     for _, light in pairs(socket.lights) do 
@@ -100,8 +114,10 @@ local cleanup_interval = 10
 mod.update = function(dt, t)       
   if not mod.initialized then return end
   
-  mod.setup:update()  
-  
+  mod.setup:update()
+
+  set_music_suppressed(mod:get("da_suppress_game_music") and not table_is_empty(mod.drones))
+
   if mod:get("da_stealth_mode") or table_is_empty(mod.drones) or not mod.update_interval then return end
   if delta > mod.update_interval then
     for drone_unit, socket in pairs(mod.drones) do
@@ -176,7 +192,7 @@ local trip_audio = function(sound_name)
 end
 
 mod.register_audio_hook = function()
-  mod.audio_backend.hook_sound("buff_drone", function(_, sound_name, delta, unit_or_position_or_id)
+  mod.simple_audio.hook_sound("buff_drone", function(_, sound_name, delta, unit_or_position_or_id)
     if not mod.initialized then return end
     trip_audio(sound_name)
     return not mod:get("da_mute_drone")
