@@ -38,16 +38,19 @@ jobs:
           name: Disco-Aquila-${{ env.VERSION }}
           path: Disco-Aquila-${{ env.VERSION }}.zip
 
-      - name: Resolve Nexus file_id
+      - name: Resolve Nexus file_id (v2 GraphQL groupId)
         if: ${{ !github.event.release.prerelease }}
         run: |
-          FID=$(curl -sS -H "apikey: ${{ secrets.NEXUSMODS_APIKEY }}" -H "accept: application/json" \
-            "https://api.nexusmods.com/v1/games/warhammer40kdarktide/mods/${{ vars.NEXUS_MOD_ID }}/files.json" \
-            | jq '[.files[] | select((.category_name // "" | ascii_downcase) == "main")] | max_by(.file_id) | .file_id')
+          # upload-action's file_id is the v3 file GROUP/slot id == GraphQL modFiles.groupId
+          # (NOT the v1 files.json file_id, which is a per-version id and 404s). gameId 4943 = Darktide.
+          FID=$(curl -sS -H "apikey: ${{ secrets.NEXUSMODS_APIKEY }}" -H "content-type: application/json" \
+            -X POST "https://api.nexusmods.com/v2/graphql" \
+            -d '{"query":"query{modFiles(modId:\"${{ vars.NEXUS_MOD_ID }}\",gameId:\"4943\"){primary category groupId}}"}' \
+            | jq -r '([.data.modFiles[]|select(.primary==1)]+[.data.modFiles[]|select(.category=="MAIN")])[0].groupId')
           if [ -z "$FID" ] || [ "$FID" = "null" ]; then
-            echo "Could not resolve a MAIN file_id for mod ${{ vars.NEXUS_MOD_ID }} (check NEXUS_MOD_ID var, NEXUSMODS_APIKEY secret, and that a first file exists)" && exit 1
+            echo "Could not resolve MAIN file groupId for mod ${{ vars.NEXUS_MOD_ID }} (game 4943)" && exit 1
           fi
-          echo "Resolved Nexus file_id=$FID"
+          echo "Resolved Nexus file_id (groupId) = $FID"
           echo "NEXUS_FILE_ID=$FID" >> "$GITHUB_ENV"
 
       - name: Upload to Nexus Mods
