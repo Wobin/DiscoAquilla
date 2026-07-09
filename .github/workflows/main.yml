@@ -1,18 +1,63 @@
-name: upload-nexus-mods
+name: Release Disco Aquila
 
 on:
   release:
-    types: [ "published" ]
-
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to upload (e.g. 2.0.1)
+        required: true
 
 jobs:
-  fetch-upload:
-    uses: wobin/DarktideModAutoUploader/.github/workflows/pack_mod.yml@v1.2
-    with:
-      nexusmods_mod_id: 548
-      mod_version: ${{ github.event.release.name }}
-      mod_description: ${{ github.event.release.body }}
-      checkout_ref: ${{ github.event.release.tag_name }}
-    secrets:
-      NEXUSMODS_APIKEY: ${{ secrets.NEXUSMODS_APIKEY }}
-      NEXUSMODS_SESSION_COOKIE: ${{ secrets.NEXUSMODS_SESSION_COOKIE }}
+  package-and-upload:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set version
+        run: echo "VERSION=${{ github.event.release.tag_name || inputs.version }}" >> "$GITHUB_ENV"
+
+      - name: Package (no git artefacts)
+        run: |
+          git archive --format=zip --prefix="Disco Aquila/" \
+            -o "Disco-Aquila-${VERSION}.zip" HEAD
+
+      - name: Verify zip contents
+        run: |
+          unzip -l "Disco-Aquila-${VERSION}.zip"
+          if unzip -l "Disco-Aquila-${VERSION}.zip" | grep -E '\.git|\.github'; then
+            echo "Git artefacts found in zip" && exit 1
+          fi
+          unzip -l "Disco-Aquila-${VERSION}.zip" | grep -q 'Disco Aquila/Disco Aquila.mod' \
+            || { echo "Missing Disco Aquila.mod" && exit 1; }
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: Disco-Aquila-${{ env.VERSION }}
+          path: Disco-Aquila-${{ env.VERSION }}.zip
+
+      - name: Resolve Nexus file_id
+        if: ${{ !github.event.release.prerelease }}
+        run: |
+          FID=$(curl -sS -H "apikey: ${{ secrets.NEXUSMODS_APIKEY }}" -H "accept: application/json" \
+            "https://api.nexusmods.com/v1/games/warhammer40kdarktide/mods/${{ vars.NEXUS_MOD_ID }}/files.json" \
+            | jq '[.files[] | select((.category_name // "" | ascii_downcase) == "main")] | max_by(.file_id) | .file_id')
+          if [ -z "$FID" ] || [ "$FID" = "null" ]; then
+            echo "Could not resolve a MAIN file_id for mod ${{ vars.NEXUS_MOD_ID }} (check NEXUS_MOD_ID var, NEXUSMODS_APIKEY secret, and that a first file exists)" && exit 1
+          fi
+          echo "Resolved Nexus file_id=$FID"
+          echo "NEXUS_FILE_ID=$FID" >> "$GITHUB_ENV"
+
+      - name: Upload to Nexus Mods
+        if: ${{ !github.event.release.prerelease }}
+        uses: Nexus-Mods/upload-action@v1.0.0-beta.8
+        with:
+          api_key: ${{ secrets.NEXUSMODS_APIKEY }}
+          file_id: ${{ env.NEXUS_FILE_ID }}
+          filename: Disco-Aquila-${{ env.VERSION }}.zip
+          version: ${{ env.VERSION }}
+          display_name: Disco Aquila ${{ env.VERSION }}
+          category: main
+          description: ${{ github.event.release.body }}
