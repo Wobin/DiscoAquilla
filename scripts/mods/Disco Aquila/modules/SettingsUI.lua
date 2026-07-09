@@ -10,7 +10,6 @@ local window_width = math.min(WIDTH * ui_scale, RESOLUTION_LOOKUP.width - OFFSET
 local window_height = math.min(HEIGHT * ui_scale, RESOLUTION_LOOKUP.height - OFFSET)
 local padded_width = window_width - PADDING
 
--- local refs
 local Imgui = Imgui
 local Imgui_checkbox = Imgui.checkbox
 local Imgui_is_item_hovered = Imgui.is_item_hovered

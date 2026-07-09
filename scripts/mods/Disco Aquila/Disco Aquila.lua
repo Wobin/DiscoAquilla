@@ -1,10 +1,9 @@
 -- Title: Disco Aquila
 -- Author: Wobin
--- Date: 28/06/2026
--- Version: 2.0.0
+-- Date: 09/07/2026
+-- Version: 2.0.1
 
 local mod = get_mod("Disco Aquila")
---local mt = get_mod("modding_tools")
 
 local PortableRandom = require("scripts/foundation/utilities/portable_random")
 local managers = Managers
@@ -34,11 +33,7 @@ local function set_music_suppressed(suppress)
   end
 end
 
-mod.version = "2.0.0"
-
-mod:io_dofile("Disco Aquila/scripts/mods/Disco Aquila/Utils")
-
-local findlocalvalue = mod.Utils.findlocalvalue
+mod.version = "2.0.1"
 
 local flashlight_unit_large = "content/weapons/player/attachments/flashlights/flashlight_01/flashlight_01"
 
@@ -51,19 +46,46 @@ local valid_zones = {
                     }
 mod.drones = {}
 
+local function any_drone_active()
+  for drone_unit in pairs(mod.drones) do
+    if unit_alive(drone_unit) then return true end
+  end
+  return false
+end
+
+local hooks_registered = false
+
+local function in_gameplay()
+  return rawget(_G, "Managers") and Managers.state and Managers.state.game_mode ~= nil
+end
+
+mod.setup_hooks = function(self)
+  if not self.simple_audio then
+    self.simple_audio = get_mod("SimpleAudio")
+  end
+  if not self.simple_audio then
+    self:error("Disco Aquila requires the SimpleAudio mod - please install and enable it.")
+    return false
+  end
+  if not hooks_registered then
+    self:register_audio_hook()
+    hooks_registered = true
+  end
+  return true
+end
+
 mod.on_all_mods_loaded = function()
   mod:info(mod.version)
-  mod.simple_audio = get_mod("SimpleAudio")
-  if not mod.simple_audio then
-    mod:error("Disco Aquila requires the SimpleAudio mod - please install and enable it.")
-    return
+  if mod:setup_hooks() and not mod.initialized and in_gameplay() then
+    mod:init()
   end
-  mod:register_audio_hook()
 end
 
 mod.on_game_state_changed = function(status, state_name)
   if not mod.initialized and status == "enter" and state_name == "StateGameplay" then
-    mod:init()
+    if mod:setup_hooks() then
+      mod:init()
+    end
   end
 end
 
@@ -116,7 +138,7 @@ mod.update = function(dt, t)
   
   mod.setup:update()
 
-  set_music_suppressed(mod:get("da_suppress_game_music") and not table_is_empty(mod.drones))
+  set_music_suppressed(mod:get("da_suppress_game_music") and any_drone_active())
 
   if mod:get("da_stealth_mode") or table_is_empty(mod.drones) or not mod.update_interval then return end
   if delta > mod.update_interval then
@@ -152,49 +174,50 @@ mod.update = function(dt, t)
   end
 end
 
---mod:io_dofile("Disco Aquila/scripts/mods/Disco Aquila/Debug")
---local extract_locals = mod.Debug.extract_locals
 
-local trip_audio = function(sound_name)
-  if false or sound_name:match("play_buff_drone_buff_loop") then
-    local drone = findlocalvalue({{"self", "Table", 7}})    
-    mod._world = drone._world    
-    
-    local socket = mod.drones[drone.unit] or {lights = {}}
-    local song = radio:play_random(drone._unit)
-    
-    if not song then return end
-    
-    local settings = mod:get("da_song_settings") or {}
-    local song_settings = settings[song] or {}
-    mod.settings = song_settings
-    if table_is_empty(socket.lights) then     
-      mod.drones[drone._unit] = socket           
-      if not mod:get("da_stealth_mode") then
-        
-        if not song_settings.random_rainbow then          
-          mod:spawn_flashlight(socket.lights, drone._unit, song_settings.colour_one)
-          mod:spawn_flashlight(socket.lights, drone._unit, song_settings.colour_two)
-          mod:spawn_flashlight(socket.lights, drone._unit, song_settings.colour_one)
-          mod:spawn_flashlight(socket.lights, drone._unit, song_settings.colour_two)
-        else          
-          mod:spawn_flashlight(socket.lights, drone._unit)        
-          mod:spawn_flashlight(socket.lights, drone._unit)        
-          mod:spawn_flashlight(socket.lights, drone._unit)        
-          mod:spawn_flashlight(socket.lights, drone._unit)        
-          mod:spawn_flashlight(socket.lights, drone._unit)        
-        end
+local trip_disco = function(drone)
+  if not mod.initialized or not drone or not drone._world then return end
+  mod._world = drone._world
+  local drone_unit = drone._unit
+
+  local socket = mod.drones[drone_unit] or {lights = {}}
+  local song = radio:play_random(drone_unit)
+
+  if not song then return end
+
+  local settings = mod:get("da_song_settings") or {}
+  local song_settings = settings[song] or {}
+  mod.settings = song_settings
+  if table_is_empty(socket.lights) then
+    mod.drones[drone_unit] = socket
+    if not mod:get("da_stealth_mode") then
+
+      if not song_settings.random_rainbow then
+        mod:spawn_flashlight(socket.lights, drone_unit, song_settings.colour_one)
+        mod:spawn_flashlight(socket.lights, drone_unit, song_settings.colour_two)
+        mod:spawn_flashlight(socket.lights, drone_unit, song_settings.colour_one)
+        mod:spawn_flashlight(socket.lights, drone_unit, song_settings.colour_two)
+      else
+        mod:spawn_flashlight(socket.lights, drone_unit)
+        mod:spawn_flashlight(socket.lights, drone_unit)
+        mod:spawn_flashlight(socket.lights, drone_unit)
+        mod:spawn_flashlight(socket.lights, drone_unit)
+        mod:spawn_flashlight(socket.lights, drone_unit)
       end
     end
-    mod.song = song    
-    mod.update_interval = 60 / (song_settings.bpm or 100) 
   end
+  mod.song = song
+  mod.update_interval = 60 / (song_settings.bpm or 100)
 end
 
 mod.register_audio_hook = function()
-  mod.simple_audio.hook_sound("buff_drone", function(_, sound_name, delta, unit_or_position_or_id)
-    if not mod.initialized then return end
-    trip_audio(sound_name)
+  mod:hook_require("scripts/components/area_buff_drone", function(AreaBuffDrone)
+    mod:hook_safe(AreaBuffDrone, "_deploy", function(self)
+      trip_disco(self)
+    end)
+  end)
+
+  mod.simple_audio.hook_sound("buff_drone", function(_, sound_name)
     return not mod:get("da_mute_drone")
   end)
 end
@@ -202,3 +225,11 @@ end
 mod:command("da", mod:localize("da_open_setup"), function ()
 	mod.setup:open()
 end)
+
+-- Hot-reload safety: on_all_mods_loaded / StateGameplay-enter don't re-fire when
+-- the mod is reloaded mid-mission, so set up immediately if already in gameplay.
+if in_gameplay() then
+  if mod:setup_hooks() and not mod.initialized then
+    mod:init()
+  end
+end

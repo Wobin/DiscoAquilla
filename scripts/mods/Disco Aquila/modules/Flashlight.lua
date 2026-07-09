@@ -1,8 +1,6 @@
 local mod = get_mod("Disco Aquila")
 local PortableRandom = require("scripts/foundation/utilities/portable_random")
---local mt = get_mod("modding_tools")
 
--- Local Refs
 local unit = Unit
 local math = math
 local pairs = pairs
@@ -44,9 +42,7 @@ local light_set_volumetric_intensity = light.set_volumetric_intensity
 local light_set_correlated_color_temperature = light.set_correlated_color_temperature
 
 
--- Data
-
-local flashlight_profile = {       
+local flashlight_profile = {
         unit = "content/weapons/player/attachments/flashlights/flashlight_01/flashlight_01",
         ies_profile = "content/environment/ies_profiles/narrow/flashlight_custom_03",
         color_temperature = 6200,
@@ -80,19 +76,15 @@ DiscoAquilaFlashlight.spawn_flashlight = function(self)
     local flashlight_unit = self.flashlight_template.unit    
     if not player_position then return end    
     self.flashlight_unit = world_spawn_unit_ex(self._world, flashlight_unit, nil, player_position, Quaternion(Vector3.up(), math.degrees_to_radians(1)))
-    --world_link_unit(self._world, self.flashlight_unit, 1, self.unit, 1)
-    -- Offset
     local offset = self.flashlight_template.offset and vector3_unbox(self.flashlight_template.offset) or vector3_zero()
     unit_set_local_position(self.flashlight_unit, 1, player_position)
-    -- Light
-    self.light = unit_light(self.flashlight_unit, 1)    
+    self.light = unit_light(self.flashlight_unit, 1)
     self:set_light()    
   end
 end
 
 DiscoAquilaFlashlight.despawn = function(self)
-    if self:flashlight_unit_alive() then        
-      --  world_unlink_unit(self._world, self.flashlight_unit)        
+    if self:flashlight_unit_alive() then
         world_destroy_unit(self._world, self.flashlight_unit)
         self.flashlight_unit = nil
     end

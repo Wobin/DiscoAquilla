@@ -1,7 +1,5 @@
 local mod = get_mod("Disco Aquila")
 
---local mt = get_mod("modding_tools")
-
 local DiscoAquilaRadio = class("DiscoAquilaRadio")
 local SA
 local song_list = {}
