@@ -8,6 +8,9 @@ on:
       version:
         description: Version to upload (e.g. 2.0.1)
         required: true
+      changelog:
+        description: Changelog text for the mod page (dispatch runs have no release body)
+        required: false
 
 jobs:
   package-and-upload:
@@ -31,12 +34,39 @@ jobs:
           fi
           unzip -l "Disco-Aquila-${VERSION}.zip" | grep -q 'Disco Aquila/Disco Aquila.mod' \
             || { echo "Missing Disco Aquila.mod" && exit 1; }
+          unzip -l "Disco-Aquila-${VERSION}.zip" | grep -q 'Disco Aquila/info.json' \
+            || { echo "Missing info.json" && exit 1; }
+
+      - name: Package no-music variant
+        run: |
+          cp "Disco-Aquila-${VERSION}.zip" "Disco-Aquila-NoMusic-${VERSION}.zip"
+          zip -d "Disco-Aquila-NoMusic-${VERSION}.zip" "Disco Aquila/audio/*"
+          mkdir -p "Disco Aquila/audio"
+          printf 'Drop your own music here (.opus .mp3 .ogg .wav .flac .m4a .aac and common video containers).\nThey appear in the mod'"'"'s song list automatically.\n' > "Disco Aquila/audio/README.txt"
+          zip "Disco-Aquila-NoMusic-${VERSION}.zip" "Disco Aquila/audio/README.txt"
+
+      - name: Verify no-music zip
+        run: |
+          unzip -l "Disco-Aquila-NoMusic-${VERSION}.zip"
+          if unzip -l "Disco-Aquila-NoMusic-${VERSION}.zip" | grep -Ei '\.(opus|mp3|ogg|wav|flac|m4a|aac|mp4|webm|mkv|mov|flv)'; then
+            echo "Audio files still present in no-music zip" && exit 1
+          fi
+          unzip -l "Disco-Aquila-NoMusic-${VERSION}.zip" | grep -q 'Disco Aquila/audio/README.txt' \
+            || { echo "Missing audio placeholder" && exit 1; }
+          unzip -l "Disco-Aquila-NoMusic-${VERSION}.zip" | grep -q 'Disco Aquila/Disco Aquila.mod' \
+            || { echo "Missing Disco Aquila.mod" && exit 1; }
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v7
         with:
           name: Disco-Aquila-${{ env.VERSION }}
           path: Disco-Aquila-${{ env.VERSION }}.zip
+
+      - name: Upload no-music build artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: Disco-Aquila-NoMusic-${{ env.VERSION }}
+          path: Disco-Aquila-NoMusic-${{ env.VERSION }}.zip
 
       - name: Resolve Nexus file_id (v2 GraphQL groupId)
         if: ${{ !github.event.release.prerelease }}
@@ -53,9 +83,18 @@ jobs:
           echo "Resolved Nexus file_id (groupId) = $FID"
           echo "NEXUS_FILE_ID=$FID" >> "$GITHUB_ENV"
 
+      - name: Resolve Nexus global mod id (v3)
+        if: ${{ !github.event.release.prerelease }}
+        run: |
+          MID=$(curl -sS -H "apikey: ${{ secrets.NEXUSMODS_APIKEY }}" \
+            "https://api.nexusmods.com/v3/games/warhammer40kdarktide/mods/${{ vars.NEXUS_MOD_ID }}" \
+            | jq -r '.data.id')
+          if [ -z "$MID" ] || [ "$MID" = "null" ]; then echo "no global mod id" && exit 1; fi
+          echo "NEXUS_GLOBAL_MOD_ID=$MID" >> "$GITHUB_ENV"
+
       - name: Upload to Nexus Mods
         if: ${{ !github.event.release.prerelease }}
-        uses: Nexus-Mods/upload-action@v1.0.0-beta.8
+        uses: Nexus-Mods/upload-action@v1.0.0-beta.10
         with:
           api_key: ${{ secrets.NEXUSMODS_APIKEY }}
           file_id: ${{ env.NEXUS_FILE_ID }}
@@ -63,4 +102,21 @@ jobs:
           version: ${{ env.VERSION }}
           display_name: Disco Aquila ${{ env.VERSION }}
           category: main
+          description: ${{ github.event.release.body || inputs.changelog }}
+          mod_id: ${{ env.NEXUS_GLOBAL_MOD_ID }}
+          changelog: ${{ github.event.release.body || inputs.changelog }}
+          update_mod_version: true
+      # Optional "bring your own music" file. Self-skips until the slot exists:
+      # upload one no-music zip to the mod page manually (category Optional Files),
+      # then: gh variable set NEXUS_NOMUSIC_FILE_ID -R Wobin/DiscoAquilla --body <file id>
+      - name: Upload no-music variant to Nexus (optional file)
+        if: ${{ !github.event.release.prerelease && vars.NEXUS_NOMUSIC_FILE_ID != '' }}
+        uses: Nexus-Mods/upload-action@v1.0.0-beta.10
+        with:
+          api_key: ${{ secrets.NEXUSMODS_APIKEY }}
+          file_id: ${{ vars.NEXUS_NOMUSIC_FILE_ID }}
+          filename: Disco-Aquila-NoMusic-${{ env.VERSION }}.zip
+          version: ${{ env.VERSION }}
+          display_name: Disco Aquila (Bring Your Own Music) ${{ env.VERSION }}
+          category: optional
           description: ${{ github.event.release.body }}

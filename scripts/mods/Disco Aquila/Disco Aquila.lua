@@ -1,7 +1,6 @@
 -- Title: Disco Aquila
 -- Author: Wobin
--- Date: 09/07/2026
--- Version: 2.0.1
+-- Date: 20/08/2026
 
 local mod = get_mod("Disco Aquila")
 
@@ -33,7 +32,7 @@ local function set_music_suppressed(suppress)
   end
 end
 
-mod.version = "2.0.1"
+mod.version = mod.get_metadata and mod:get_metadata("version") or "unknown"
 
 local flashlight_unit_large = "content/weapons/player/attachments/flashlights/flashlight_01/flashlight_01"
 
@@ -74,8 +73,17 @@ mod.setup_hooks = function(self)
   return true
 end
 
+local function sync_track_settings()
+	local TrackOptions = mod.track_options
+
+	if TrackOptions then
+		TrackOptions.sync()
+	end
+end
+
 mod.on_all_mods_loaded = function()
   mod:info(mod.version)
+  sync_track_settings()
   if mod:setup_hooks() and not mod.initialized and in_gameplay() then
     mod:init()
   end
@@ -97,14 +105,47 @@ local random = PortableRandom:new(os_clock())
 local random_range = random.random_range
 local flashlight = mod:io_dofile("Disco Aquila/scripts/mods/Disco Aquila/modules/flashlight")
 local radio = mod:io_dofile("Disco Aquila/scripts/mods/Disco Aquila/modules/radio")
-local setup = mod:io_dofile("Disco Aquila/scripts/mods/Disco Aquila/modules/settingsui")
 
 mod.init = function(self)
     self.package_manager = managers.package
     self.package_manager:load("content/weapons/player/attachments/flashlights/flashlight_01/flashlight_01", "DiscoAqulia")              
     self.radio = radio:new()
-    self.setup = setup:new()
     self.initialized = true       
+end
+
+mod.on_setting_changed = function(setting_id)
+	if setting_id == "da_track_selector" then
+		return
+	end
+
+	sync_track_settings()
+end
+
+mod.on_settings_reset = function()
+	sync_track_settings()
+end
+
+mod.preview_selected_track = function()
+	local TrackOptions = mod.track_options
+
+	if not TrackOptions or not mod.radio then
+		return
+	end
+
+	if mod.playingSample then
+		mod.radio:stop_playing(mod.playingSample)
+		mod.playingSample = nil
+
+		return
+	end
+
+	local track = TrackOptions.selected_track()
+
+	if not track then
+		return
+	end
+
+	mod.playingSample = mod.radio:play_sample(track.name, mod:get(track.id .. "_volume") or 80)
 end
 
 mod.spawn_flashlight = function(self, lightFixture, drone_unit, colour)
@@ -124,9 +165,6 @@ mod.deinit = function(self)
     end
   end
   self.drones = {}
-  if mod.setup then 
-    mod.setup:close()
-  end
 end
 
 local delta = 0
@@ -136,8 +174,6 @@ local cleanup_interval = 10
 mod.update = function(dt, t)       
   if not mod.initialized then return end
   
-  mod.setup:update()
-
   set_music_suppressed(mod:get("da_suppress_game_music") and any_drone_active())
 
   if mod:get("da_stealth_mode") or table_is_empty(mod.drones) or not mod.update_interval then return end
@@ -222,8 +258,8 @@ mod.register_audio_hook = function()
   end)
 end
 
-mod:command("da", mod:localize("da_open_setup"), function ()
-	mod.setup:open()
+mod:command("da", mod:localize("da_song_settings"), function ()
+	Managers.ui:open_view("dmf_options_view", nil, nil, nil, nil, { can_exit = true })
 end)
 
 -- Hot-reload safety: on_all_mods_loaded / StateGameplay-enter don't re-fire when

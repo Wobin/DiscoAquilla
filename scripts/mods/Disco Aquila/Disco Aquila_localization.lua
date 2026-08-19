@@ -5,6 +5,21 @@ local localizations = {
 	mod_description = {
 		en = "Disco Aquila will bring music and light to the darkness of Tertium",
 	},
+  da_lights_rainbow = {
+    en = "Random rainbow",
+  },
+  da_lights_fixed = {
+    en = "Fixed colours",
+  },
+  da_preview_track = {
+    en = "Preview",
+  },
+  da_preview_track_button = {
+    en = "Play / stop sample",
+  },
+  da_no_tracks = {
+    en = "No tracks found. Add audio files to mods/Disco Aquila/audio/",
+  },
   da_open_setup = {
     en = "Opens the setup window"
   },  

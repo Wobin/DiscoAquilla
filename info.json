@@ -1,13 +1,21 @@
 {
 	"name": "Disco Aquila",
-	"author": "Wobin",
-	"version": "2.0.1",
-	"source": "https://github.com/Wobin/DiscoAquilla",
-	"nexusId": "548",
 	"description": "Disco Aquila will bring music and light to the darkness of Tertium",
+	"version": "2.1.1",
+	"author": "Wobin",
+	"homepage": "https://www.nexusmods.com/warhammer40kdarktide/mods/548",
+	"source": "https://github.com/Wobin/DiscoAquilla",
+	"funding": {
+		"kofi": "https://ko-fi.com/wobin_dwonderdog"
+	},
+	"nexusId": "548",
 	"order": {
-		"require": ["SimpleAudio"],
-		"this_after": ["SimpleAudio"],
+		"require": [
+			"SimpleAudio"
+		],
+		"this_after": [
+			"SimpleAudio"
+		],
 		"this_before": []
 	}
 }
