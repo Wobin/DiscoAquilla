@@ -17,17 +17,15 @@ local Application = Application
 
 local MUSIC_PARAM = "options_music_slider"
 local music_suppressed = false
-local saved_music_volume = 100
 
 local function set_music_suppressed(suppress)
   if not (Wwise and Wwise.set_parameter) then return end
   if suppress then
     if music_suppressed then return end
-    saved_music_volume = Application.user_setting("sound_settings", MUSIC_PARAM) or 100
     Wwise.set_parameter(MUSIC_PARAM, 0)
     music_suppressed = true
   elseif music_suppressed then
-    Wwise.set_parameter(MUSIC_PARAM, saved_music_volume)
+    Wwise.set_parameter(MUSIC_PARAM, Application.user_setting("sound_settings", MUSIC_PARAM) or 100)
     music_suppressed = false
   end
 end
@@ -73,6 +71,14 @@ mod.setup_hooks = function(self)
   return true
 end
 
+local suppress_game_music = false
+local stealth_mode = false
+
+local function refresh_cached_settings()
+	suppress_game_music = mod:get("da_suppress_game_music") and true or false
+	stealth_mode = mod:get("da_stealth_mode") and true or false
+end
+
 local function sync_track_settings()
 	local TrackOptions = mod.track_options
 
@@ -83,6 +89,7 @@ end
 
 mod.on_all_mods_loaded = function()
   mod:info(mod.version)
+  refresh_cached_settings()
   sync_track_settings()
   if mod:setup_hooks() and not mod.initialized and in_gameplay() then
     mod:init()
@@ -108,20 +115,23 @@ local radio = mod:io_dofile("Disco Aquila/scripts/mods/Disco Aquila/modules/radi
 
 mod.init = function(self)
     self.package_manager = managers.package
-    self.package_manager:load("content/weapons/player/attachments/flashlights/flashlight_01/flashlight_01", "DiscoAqulia")              
+    self.package_id = self.package_manager:load(flashlight_unit_large, "DiscoAquila")
     self.radio = radio:new()
     self.initialized = true       
 end
 
 mod.on_setting_changed = function(setting_id)
-	if setting_id == "da_track_selector" then
-		return
-	end
+	refresh_cached_settings()
 
-	sync_track_settings()
+	-- Only the per-track widgets feed the synced table; rebuilding it for a
+	-- global toggle would rewrite every track on each slider notch.
+	if setting_id and string.find(setting_id, "^da_song_") then
+		sync_track_settings()
+	end
 end
 
 mod.on_settings_reset = function()
+	refresh_cached_settings()
 	sync_track_settings()
 end
 
@@ -149,61 +159,76 @@ mod.preview_selected_track = function()
 end
 
 mod.spawn_flashlight = function(self, lightFixture, drone_unit, colour)
-    table_insert(lightFixture, flashlight:new(self._world, drone_unit, random_range(random, 0, 1000), colour))
-    for _,light in pairs(lightFixture) do            
-      light:spawn_flashlight()   
-      light:random_rotate()
-    end
+    local light = flashlight:new(self._world, drone_unit, random_range(random, 0, 1000), colour)
+    table_insert(lightFixture, light)
+    light:spawn_flashlight()
+    light:random_rotate()
 end
 
 mod.deinit = function(self)
   set_music_suppressed(false)
-  if not self.drones then return end
-  for _, socket in pairs(self.drones) do
-    for _, light in pairs(socket.lights) do 
-      light:despawn()
+  if self.drones then
+    for _, socket in pairs(self.drones) do
+      for _, light in pairs(socket.lights) do
+        light:despawn()
+      end
     end
   end
   self.drones = {}
+  if self.package_manager and self.package_id then
+    self.package_manager:release(self.package_id)
+    self.package_id = nil
+  end
+  self.package_manager = nil
+  self.radio = nil
+  self.initialized = false
 end
 
 local delta = 0
 local cleanupdelta = 0
 local cleanup_interval = 10
 
-mod.update = function(dt, t)       
-  if not mod.initialized then return end
-  
-  set_music_suppressed(mod:get("da_suppress_game_music") and any_drone_active())
+local trash = {}
 
-  if mod:get("da_stealth_mode") or table_is_empty(mod.drones) or not mod.update_interval then return end
-  if delta > mod.update_interval then
-    for drone_unit, socket in pairs(mod.drones) do
-      if unit_alive(drone_unit) then 
-        for _, light in pairs(socket.lights) do
-          light:random_rotate()
+mod.update = function(dt, t)
+  if not mod.initialized then return end
+
+  set_music_suppressed(suppress_game_music and any_drone_active())
+
+  if table_is_empty(mod.drones) then return end
+
+  -- Rotation only runs when lights exist; cleanup must run regardless, or dead
+  -- drones accumulate for the whole session while stealth mode is on.
+  if not stealth_mode and mod.update_interval then
+    if delta > mod.update_interval then
+      for drone_unit, socket in pairs(mod.drones) do
+        if unit_alive(drone_unit) then
+          for _, light in pairs(socket.lights) do
+            light:random_rotate()
+          end
+        else
+          cleanupdelta = cleanup_interval + 1
         end
-      else
-        cleanupdelta = 100
       end
+      delta = 0
+    else
+      delta = delta + dt
     end
-		delta = 0
-	else
-		delta = delta + dt
-	end  
-  if cleanupdelta > cleanup_interval then    
-    local trash = {}    
+  end
+
+  if cleanupdelta > cleanup_interval then
     for drone_unit, drone in pairs(mod.drones) do
-      if not unit_alive(drone_unit) then 
-        trash[drone_unit] = true 
+      if not unit_alive(drone_unit) then
+        trash[drone_unit] = true
         for _, light in pairs(drone.lights) do
           light:despawn()
         end
       end
-    end  
-    for rubbish,_ in pairs(trash) do
-      mod.drones[rubbish] = nil     
-    end    
+    end
+    for rubbish in pairs(trash) do
+      mod.drones[rubbish] = nil
+    end
+    table.clear(trash)
     cleanupdelta = 0
   else
     cleanupdelta = cleanupdelta + dt
@@ -223,18 +248,15 @@ local trip_disco = function(drone)
 
   local settings = mod:get("da_song_settings") or {}
   local song_settings = settings[song] or {}
-  mod.settings = song_settings
   if table_is_empty(socket.lights) then
     mod.drones[drone_unit] = socket
-    if not mod:get("da_stealth_mode") then
-
+    if not stealth_mode then
       if not song_settings.random_rainbow then
         mod:spawn_flashlight(socket.lights, drone_unit, song_settings.colour_one)
         mod:spawn_flashlight(socket.lights, drone_unit, song_settings.colour_two)
         mod:spawn_flashlight(socket.lights, drone_unit, song_settings.colour_one)
         mod:spawn_flashlight(socket.lights, drone_unit, song_settings.colour_two)
       else
-        mod:spawn_flashlight(socket.lights, drone_unit)
         mod:spawn_flashlight(socket.lights, drone_unit)
         mod:spawn_flashlight(socket.lights, drone_unit)
         mod:spawn_flashlight(socket.lights, drone_unit)
@@ -261,6 +283,8 @@ end
 -- Hot-reload safety: on_all_mods_loaded / StateGameplay-enter don't re-fire when
 -- the mod is reloaded mid-mission, so set up immediately if already in gameplay.
 if in_gameplay() then
+  refresh_cached_settings()
+  sync_track_settings()
   if mod:setup_hooks() and not mod.initialized then
     mod:init()
   end
