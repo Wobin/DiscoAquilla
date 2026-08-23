@@ -1,6 +1,6 @@
 -- Title: Disco Aquila
 -- Author: Wobin
--- Date: 20/08/2026
+-- Date: 23/08/2026
 
 local mod = get_mod("Disco Aquila")
 
@@ -257,10 +257,6 @@ mod.register_audio_hook = function()
     return not mod:get("da_mute_drone")
   end)
 end
-
-mod:command("da", mod:localize("da_song_settings"), function ()
-	Managers.ui:open_view("dmf_options_view", nil, nil, nil, nil, { can_exit = true })
-end)
 
 -- Hot-reload safety: on_all_mods_loaded / StateGameplay-enter don't re-fire when
 -- the mod is reloaded mid-mission, so set up immediately if already in gameplay.

@@ -20,9 +20,6 @@ local localizations = {
   da_no_tracks = {
     en = "No tracks found. Add audio files to mods/Disco Aquila/audio/",
   },
-  da_open_setup = {
-    en = "Opens the setup window"
-  },  
   da_play_once = {
     en = "Play only one song at a time",    
   },
