@@ -15,7 +15,6 @@ local unit_light = unit.light
 local unit_alive = unit.alive
 local vector3_box = Vector3Box
 local vector3_zero = vector3.zero
-local vector3_unbox = vector3_box.unbox
 local vector3_up = vector3.up
 local unit_world_position = unit.world_position
 local world_link_unit = world.link_unit
@@ -76,7 +75,6 @@ DiscoAquilaFlashlight.spawn_flashlight = function(self)
     local flashlight_unit = self.flashlight_template.unit    
     if not player_position then return end    
     self.flashlight_unit = world_spawn_unit_ex(self._world, flashlight_unit, nil, player_position, Quaternion(Vector3.up(), math.degrees_to_radians(1)))
-    local offset = self.flashlight_template.offset and vector3_unbox(self.flashlight_template.offset) or vector3_zero()
     unit_set_local_position(self.flashlight_unit, 1, player_position)
     self.light = unit_light(self.flashlight_unit, 1)
     self:set_light()    
@@ -92,7 +90,7 @@ end
 
 DiscoAquilaFlashlight.set_color = function(self, r, g, b)
     if self.light and self.flashlight_unit then
-        light_set_color_filter(self.light, vector3(r or 0, g or 1, b or 0))
+        light_set_color_filter(self.light, vector3(r or 0, g or 0, b or 0))
         local color = light_color_with_intensity(self.light) or vector3_zero()
         unit_set_vector3_for_materials(self.flashlight_unit, "light_color", color)
     end
@@ -116,14 +114,16 @@ DiscoAquilaFlashlight.set_light = function(self)
         light_set_spot_angle_end(self.light, self.flashlight_template.spot_angle_end)
         light_set_falloff_start(self.light, self.flashlight_template.falloff_start)
         light_set_falloff_end(self.light, self.flashlight_template.falloff_end)
-        light_set_volumetric_intensity(self.light, volumetric_intensity or self.flashlight_template.volumetric_intensity)
+        light_set_volumetric_intensity(self.light, self.flashlight_template.volumetric_intensity)
         self:set_color(self.r, self.g, self.b)
     end
 end
 
-local random 
-
 DiscoAquilaFlashlight.random_rotate = function(self)
+  local random = self.random
+
+  if not random then return end
+
   self.rotation = random:random_range(0, 360)
   if not self.colour then
     self.r = random:random_range(0, 1)
@@ -148,8 +148,8 @@ DiscoAquilaFlashlight.init = function(self, world, unit, seed, colour)
     self.g = colour.g
     self.b = colour.b
   end
-  random = PortableRandom:new(seed)  
-  self.initialised = true  
+  self.random = PortableRandom:new(seed)
+  self.initialised = true
 end
 
 return DiscoAquilaFlashlight

@@ -71,10 +71,8 @@ if #tracks > 0 then
 else
 	widgets[#widgets + 1] = {
 		setting_id = "da_no_tracks",
-		type = "checkbox",
+		type = "header",
 		title = "da_no_tracks",
-		default_value = false,
-		require_restart = true,
 	}
 end
 

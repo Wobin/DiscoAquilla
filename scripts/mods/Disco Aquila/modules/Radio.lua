@@ -17,21 +17,19 @@ local pcall = pcall
 local Unit = Unit
 local unit_alive = Unit.alive
 
-local AUDIO_DIR = "mods/Disco Aquila/audio/"
-local EXTENSIONS = { "opus", "mp3", "ogg", "wav", "flac", "m4a", "aac", "mp4", "webm", "mkv", "mov", "flv" }
 local FOLLOW_INTERVAL = 0.1
 
-local function basename(path)
-  return path:match("[^/\\]+$") or path
-end
-
 local function build_song_list()
+  local TrackOptions = mod.track_options
+
+  if not TrackOptions then return {} end
+
   local items = {}
-  for _, ext in ipairs(EXTENSIONS) do
-    local ok, g = pcall(SA.glob, AUDIO_DIR .. "*." .. ext)
+  for _, ext in ipairs(TrackOptions.EXTENSIONS) do
+    local ok, g = pcall(SA.glob, TrackOptions.AUDIO_DIR .. "*." .. ext)
     if ok and g and g:count() > 0 then
       for _, p in ipairs(g:list()) do
-        items[#items + 1] = { file_path = basename(p), _path = p }
+        items[#items + 1] = { file_path = TrackOptions.basename(p), _path = p }
       end
     end
   end
@@ -63,12 +61,7 @@ local function play(path, opts, unit)
   return SA.play_file(path, settings, unit)
 end
 
-DiscoAquilaRadio.init = function(self, retried)
-  if not Managers.backend:authenticated() and (retried or 0) > 0 then
-    Promise.delay(10):next(function() self:init((retried or 0) - 1) end)
-    return
-  end
-
+DiscoAquilaRadio.init = function(self)
   SA = mod.simple_audio
   song_list = SA and build_song_list() or {}
   path_lookup = {}
@@ -82,7 +75,7 @@ DiscoAquilaRadio.get_music = function()
   return song_list or {}
 end
 
-DiscoAquilaRadio.play_sample = function(self, song_name, volume)
+DiscoAquilaRadio.play_sample = function(_, song_name, volume)
   local path = path_lookup[song_name] or song_name
   return play(path, {
     volume      = volume,
@@ -91,15 +84,17 @@ DiscoAquilaRadio.play_sample = function(self, song_name, volume)
   })
 end
 
-DiscoAquilaRadio.stop_playing = function(self, id)
+DiscoAquilaRadio.stop_playing = function(_, id)
   SA.stop_file(id)
 end
 
-DiscoAquilaRadio.play_random = function(self, unit)
+DiscoAquilaRadio.play_random = function(_, unit)
   if #song_list == 0 then
     mod:echo("Cannot read the audio directory")
     return
   end
+
+  if mod:get("da_play_once") and mod.song then return end
 
   if #playlist == 0 then
     playlist = table_clone(song_list)
@@ -113,7 +108,6 @@ DiscoAquilaRadio.play_random = function(self, unit)
     mod:echo(song)
   end
 
-  if mod:get("da_play_once") and mod.song then return end
   local settings = mod:get("da_song_settings") or {}
   local song_settings = settings[song] or { volume = 80 }
   local opts = {

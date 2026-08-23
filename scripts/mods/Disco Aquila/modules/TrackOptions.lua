@@ -2,12 +2,22 @@ local mod = get_mod("Disco Aquila")
 
 local M = {}
 
-local EXTENSIONS = { "mp3", "ogg", "oga", "opus", "wav", "flac", "m4a", "aac" }
+local EXTENSIONS = {
+	"opus", "mp3", "ogg", "oga", "wav", "flac", "m4a", "aac",
+	"mp4", "webm", "mkv", "mov", "flv",
+}
 local AUDIO_DIR = "mods/Disco Aquila/audio/"
 
 local DEFAULT_VOLUME = 80
 local DEFAULT_BPM = 100
-local DEFAULT_COLOUR = { 255, 0, 0, 0 }
+local DEFAULT_COLOUR = { 255, 255, 0, 0 }
+
+M.EXTENSIONS = EXTENSIONS
+M.AUDIO_DIR = AUDIO_DIR
+
+M.basename = function(path)
+	return string.match(path, "[^/\\]+$") or path
+end
 
 local function checksum(text)
 	local h = 5381
@@ -55,7 +65,7 @@ M.list_tracks = function()
 			if ok_list and type(list) == "table" then
 				for i = 1, #list do
 					local path = tostring(list[i])
-					local name = string.match(path, "[^/]+$") or path
+					local name = M.basename(path)
 
 					if not seen[name] then
 						seen[name] = true
