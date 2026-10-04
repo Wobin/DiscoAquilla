@@ -13,7 +13,6 @@ local table = table
 local table_clone = table.shallow_copy
 local table_remove = table.remove
 local ipairs = ipairs
-local pcall = pcall
 local Unit = Unit
 local unit_alive = Unit.alive
 
@@ -25,13 +24,8 @@ local function build_song_list()
   if not TrackOptions then return {} end
 
   local items = {}
-  for _, ext in ipairs(TrackOptions.EXTENSIONS) do
-    local ok, g = pcall(SA.glob, TrackOptions.AUDIO_DIR .. "*." .. ext)
-    if ok and g and g:count() > 0 then
-      for _, p in ipairs(g:list()) do
-        items[#items + 1] = { file_path = TrackOptions.basename(p), _path = p }
-      end
-    end
+  for _, track in ipairs(TrackOptions.tracks or {}) do
+    items[#items + 1] = { file_path = track.name, _path = track.path }
   end
   return items
 end
@@ -84,8 +78,8 @@ DiscoAquilaRadio.play_sample = function(_, song_name, volume)
   })
 end
 
-DiscoAquilaRadio.stop_playing = function(_, id)
-  SA.stop_file(id)
+DiscoAquilaRadio.stop_playing = function(_, id, fade_out)
+  SA.stop_file(id, fade_out)
 end
 
 DiscoAquilaRadio.play_random = function(_, unit)
@@ -121,8 +115,7 @@ DiscoAquilaRadio.play_random = function(_, unit)
   if mod:get("da_apply_master_volume") then
     opts.volume = mod:get("da_master_volume") or 80
   end
-  play(play_path, opts, unit)
-  return song
+  return song, play(play_path, opts, unit)
 end
 
 return DiscoAquilaRadio

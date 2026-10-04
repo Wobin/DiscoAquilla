@@ -71,8 +71,11 @@ if #tracks > 0 then
 else
 	widgets[#widgets + 1] = {
 		setting_id = "da_no_tracks",
-		type = "header",
+		type = "button",
 		title = "da_no_tracks",
+		button_text = "da_no_tracks_button",
+		button_trigger = "pressed",
+		function_name = "report_no_tracks",
 	}
 end
 
@@ -80,6 +83,7 @@ return {
 	name = "Disco Aquila",
 	description = mod:localize("mod_description"),
 	is_togglable = true,
+	allow_rehooking = true,
 	options = {
 		widgets = widgets,
 	},

@@ -17,6 +17,9 @@ local localizations = {
   da_preview_track_button = {
     en = "Play / stop sample",
   },
+  da_no_tracks_button = {
+    en = "Show reason",
+  },
   da_no_tracks = {
     en = "No tracks found. Add audio files to mods/Disco Aquila/audio/",
   },

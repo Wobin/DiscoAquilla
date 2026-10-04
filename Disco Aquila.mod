@@ -9,10 +9,4 @@ return {
 		})
 	end,
 	packages = {},
-  load_after = {
-    "SimpleAudio",
-  },
-  require = {
-    "SimpleAudio",
-  },
 }

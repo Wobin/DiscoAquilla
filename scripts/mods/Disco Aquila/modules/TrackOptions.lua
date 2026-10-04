@@ -48,11 +48,25 @@ M.id_for = function(name)
 	return "da_song_" .. safe_id(name) .. "_" .. tostring(checksum(name))
 end
 
+local function scan_failed(reason)
+	M.scan_error = reason
+	mod:info("%s", "No tracks loaded: " .. reason)
+end
+
 M.list_tracks = function()
 	local sa = get_mod("SimpleAudio")
 	local tracks, seen = {}, {}
+	local scan_error
 
-	if not sa or type(sa.glob) ~= "function" then
+	M.scan_error = nil
+
+	if not sa then
+		scan_failed("SimpleAudio is not loaded. Check it is installed, enabled, and listed above Disco Aquila in mod_load_order.txt")
+		return tracks
+	end
+
+	if type(sa.glob) ~= "function" then
+		scan_failed("SimpleAudio has no glob function. Update SimpleAudio")
 		return tracks
 	end
 
@@ -69,10 +83,22 @@ M.list_tracks = function()
 
 					if not seen[name] then
 						seen[name] = true
-						tracks[#tracks + 1] = { name = name, id = M.id_for(name) }
+						tracks[#tracks + 1] = { name = name, id = M.id_for(name), path = path }
 					end
 				end
+			elseif not scan_error then
+				scan_error = tostring(list)
 			end
+		elseif not ok and not scan_error and not string.find(tostring(result), "No audio files matched", 1, true) then
+			scan_error = tostring(result)
+		end
+	end
+
+	if #tracks == 0 then
+		if scan_error then
+			scan_failed("SimpleAudio could not scan " .. AUDIO_DIR .. ": " .. scan_error)
+		else
+			scan_failed("No audio files found in " .. AUDIO_DIR)
 		end
 	end
 

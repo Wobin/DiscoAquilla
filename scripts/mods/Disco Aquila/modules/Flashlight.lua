@@ -1,4 +1,3 @@
-local mod = get_mod("Disco Aquila")
 local PortableRandom = require("scripts/foundation/utilities/portable_random")
 
 local unit = Unit
@@ -67,15 +66,13 @@ end
 
 DiscoAquilaFlashlight.spawn_flashlight = function(self)
   if self.initialised and not self:flashlight_unit_alive() then    
-    if not self.unit then 
-      mod:echo("unit not found") 
-      return 
-    end    
+    if not self.unit then return end
     local player_position = Unit.world_position(self.unit, 1)
     local flashlight_unit = self.flashlight_template.unit    
     if not player_position then return end    
     self.flashlight_unit = world_spawn_unit_ex(self._world, flashlight_unit, nil, player_position, Quaternion(Vector3.up(), math.degrees_to_radians(1)))
-    unit_set_local_position(self.flashlight_unit, 1, player_position)
+    world_link_unit(self._world, self.flashlight_unit, 1, self.unit, 1)
+    unit_set_local_position(self.flashlight_unit, 1, vector3_zero())
     self.light = unit_light(self.flashlight_unit, 1)
     self:set_light()    
   end
@@ -83,6 +80,7 @@ end
 
 DiscoAquilaFlashlight.despawn = function(self)
     if self:flashlight_unit_alive() then
+        world_unlink_unit(self._world, self.flashlight_unit)
         world_destroy_unit(self._world, self.flashlight_unit)
         self.flashlight_unit = nil
     end
